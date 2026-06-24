@@ -1,0 +1,277 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -48.483188,
+          -1.441112999952488
+        ]
+      },
+      "properties": {
+        "nome": "Fundação Santa Casa de Misericórdia do Pará",
+        "endereco": "Rua Oliveira Belo, entre Travessa 14 de Março e Avenida Generalíssimo Deodoro",
+        "bairro": "Umarizal",
+        "perfil": "Obstetrícia e Neonatal",
+        "tipo": "Hospital / Pronto-Socorro"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -48.4721,
+          -1.36529999995499
+        ]
+      },
+      "properties": {
+        "nome": "Hospital Dr. Abelardo Santos",
+        "endereco": "Rodovia Augusto Montenegro, esquina com  a Rua 8 de Maio",
+        "bairro": "Campina de Icoaraci",
+        "perfil": "Pediatria (até 12 Anos) e Obstetrícia",
+        "tipo": "Hospital / Pronto-Socorro"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -48.461141,
+          -1.144421999962269
+        ]
+      },
+      "properties": {
+        "nome": "Hospital Municipal de Mosqueiro",
+        "endereco": "Rua 15 de Novembro",
+        "bairro": "Vila - Mosqueiro",
+        "perfil": "Clínica Básica Geral, Pediatria e Traumato Básica",
+        "tipo": "Hospital / Pronto-Socorro"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -48.477025,
+          -1.452651999952113
+        ]
+      },
+      "properties": {
+        "nome": "Hospital Público da Mulher Nossa Senhora de Nazaré",
+        "endereco": "Avenida Gentil Bittencourt, entre a Travessa Casemiro de Abreu e a Avenida José Bonifácio",
+        "bairro": "São Bras",
+        "perfil": "Violência Sexual e Violência Doméstica",
+        "tipo": "Hospital / Pronto-Socorro"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -48.46200000000001,
+          -1.462999999951768
+        ]
+      },
+      "properties": {
+        "nome": "Hospital de Clínicas Gaspar Viana",
+        "endereco": "Tv. Alferes Costa, S/N",
+        "bairro": "Pedreira",
+        "perfil": "Cardiologia, Psiquiatria e Nefrologia",
+        "tipo": "Hospital / Pronto-Socorro"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -48.46337800000001,
+          -1.458924999951904
+        ]
+      },
+      "properties": {
+        "nome": "Hospital e Pronto Socorro Dr. Humberto Maradei",
+        "endereco": "Rua Augusto Corrêa, próximo à passarela do Campus da UFPA",
+        "bairro": "Guamá",
+        "perfil": "Clínica Geral e Cirúrgica",
+        "tipo": "Hospital / Pronto-Socorro"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -48.473551,
+          -1.444982999952366
+        ]
+      },
+      "properties": {
+        "nome": "Hospital e Pronto Socorro Dr. Mario Pinotti",
+        "endereco": "Travessa 14 de Março entre Bernal do Couto e Jerônimo Pimentel",
+        "bairro": "Umarizal",
+        "perfil": "Clínica Geral e Cirúrgica",
+        "tipo": "Hospital / Pronto-Socorro"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -48.451425,
+          -1.337817999955898
+        ]
+      },
+      "properties": {
+        "nome": "Hospital e Pronto Socorro Dr. Roberto Macedo",
+        "endereco": "Rodovia Augusto Montenegro, próximo à entrada",
+        "bairro": "Begui",
+        "perfil": "Clínica Geral, Pediatria e Cirúrgica",
+        "tipo": "Hospital / Pronto-Socorro"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -48.456298,
+          -1.315891999956614
+        ]
+      },
+      "properties": {
+        "nome": "UPA DAICO",
+        "endereco": "Rua Paraíso, S/N",
+        "bairro": "Parque Guajará",
+        "perfil": "Clínica Médica e Pediátrica",
+        "tipo": "UPA"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -48.468889,
+          -1.421527999953139
+        ]
+      },
+      "properties": {
+        "nome": "UPA DASAC",
+        "endereco": "Avenida Dr. Freitas, esquina com a Canal do Galo",
+        "bairro": "Sacramenta",
+        "perfil": "Clínica Médica e Pediátrica",
+        "tipo": "UPA"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -48.450476,
+          -1.471112999951506
+        ]
+      },
+      "properties": {
+        "nome": "UPA D’Água I",
+        "endereco": "Avenida Perimetral, s/n",
+        "bairro": "Guamá",
+        "perfil": "Clínica Médica e Pediátrica",
+        "tipo": "UPA"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -48.490892,
+          -1.464669999951714
+        ]
+      },
+      "properties": {
+        "nome": "UPA D’Água II",
+        "endereco": "Avenida Roberto Camelier, esquina com a Travessa Quintino Bocaiúva",
+        "bairro": "Jurunas",
+        "perfil": "Clínica Médica e Pediátrica",
+        "tipo": "UPA"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -48.459345,
+          -1.295709999957279
+        ]
+      },
+      "properties": {
+        "nome": "UPA Marambaia",
+        "endereco": "Avenida Dalva, entre a Rua 27 de Dezembro e a Passagem São Sebastião",
+        "bairro": "Marambaia",
+        "perfil": "Clínica Médica e Pediátrica",
+        "tipo": "UPA"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -48.5558,
+          -1.263699999958335
+        ]
+      },
+      "properties": {
+        "nome": "Unidade Municipal de Saúde de Cotijuba",
+        "endereco": "RUA MAGALHÃES BARATA, COTIJUBA",
+        "bairro": "Centro de Cotijuba",
+        "perfil": "Clínica Médica Básica Em Casos Graves → Encaminha Para Belém (continente) Via Transporte Fluvial Ou Samu",
+        "tipo": "Unidade Básica / Municipal"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -48.4675129,
+          -1.260816099958435
+        ]
+      },
+      "properties": {
+        "nome": "Unidade Municipal de Saúde de Outeiro",
+        "endereco": "R. Manoel Barata, 2373–2397 – São João do Outeiro",
+        "bairro": "Outeiro",
+        "perfil": "Clínica Médica Básica, Casos Graves → Encaminhados Para Hospitais Maiores, Como Abelardo Santos",
+        "tipo": "Unidade Básica / Municipal"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -48.438889,
+          -1.12158299996302
+        ]
+      },
+      "properties": {
+        "nome": "Urg. e Emerg. Básica de Carananduba",
+        "endereco": "Rodovia BL-13, principal acesso à Praia de Carananduba",
+        "bairro": "Carananduba",
+        "perfil": "Clínica Médica Básica",
+        "tipo": "Unidade Básica / Municipal"
+      }
+    }
+  ]
+}
