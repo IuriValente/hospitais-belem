@@ -1,151 +1,418 @@
-<!DOCTYPE html>
-<html lang="pt-br">
+<!doctype html>
+<html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hospitais de Belém | Urgência e Emergência</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#b00020">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="Encontre rápido o hospital de referência mais próximo capaz de atender a emergência em Belém-PA. Não substitui o SAMU 192.">
+<title>Emergência Belém — protótipo</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',Roboto,Arial,sans-serif;background:#eef1f4;color:#222}
-header{background:linear-gradient(135deg,#d32f2f,#9e1414);color:#fff;padding:12px 16px}
-header h1{font-size:19px;display:flex;align-items:center;gap:8px}
-header p{font-size:12.5px;opacity:.92;margin-top:2px}
-#controles{background:#fff;padding:10px 12px;box-shadow:0 2px 5px rgba(0,0,0,.1);position:relative;z-index:600}
-#busca{width:100%;padding:11px 12px;border:1px solid #dcdcdc;border-radius:9px;font-size:15px;outline:none}
-#busca:focus{border-color:#d32f2f}
-#filtros{display:flex;gap:8px;margin-top:9px;overflow-x:auto;padding-bottom:3px;-webkit-overflow-scrolling:touch}
-#filtros button{flex:0 0 auto;border:1px solid #dcdcdc;background:#f6f6f6;border-radius:20px;padding:7px 14px;font-size:13px;cursor:pointer;white-space:nowrap}
-#filtros button.ativo{background:#d32f2f;color:#fff;border-color:#d32f2f}
-#btn-perto{background:#1565c0!important;color:#fff!important;border-color:#1565c0!important;font-weight:bold}
-#conteudo{display:flex;flex-direction:column;height:calc(100vh - 138px)}
-#map{height:44vh;width:100%;z-index:1}
-#lista{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch}
-.card{background:#fff;border-radius:11px;padding:12px 13px;box-shadow:0 1px 3px rgba(0,0,0,.13);border-left:5px solid #ccc;cursor:pointer;transition:box-shadow .15s}
-.card:active,.card:hover{box-shadow:0 3px 10px rgba(0,0,0,.2)}
-.card.sel{box-shadow:0 0 0 2px #d32f2f,0 3px 10px rgba(0,0,0,.2)}
-.badge{display:inline-block;color:#fff;font-size:10.5px;font-weight:bold;padding:2px 9px;border-radius:10px;margin-bottom:5px;letter-spacing:.3px}
-.card h3{font-size:14.5px;line-height:1.25;margin:2px 0}
-.card .end{font-size:12.5px;color:#555;margin:4px 0}
-.card .perfil{font-size:12px;color:#777}
-.card .dist{font-size:13px;color:#1565c0;font-weight:bold;margin-top:5px}
-.btn-rota{display:inline-block;margin-top:9px;background:#2e7d32;color:#fff;text-decoration:none;padding:8px 13px;border-radius:8px;font-size:13px;font-weight:bold}
-.vazio{text-align:center;color:#999;padding:34px 10px}
-.leaflet-popup-content{font-size:13px;line-height:1.4}
-@media(min-width:900px){
-  #conteudo{flex-direction:row-reverse}
-  #map{height:100%;flex:1}
-  #lista{width:390px;flex:none;border-right:1px solid #e2e2e2}
-}
+  :root{
+    --bg:#ffffff; --fg:#16181d; --muted:#5b626e; --line:#d7dbe2;
+    --card:#f5f7fa; --card-fg:#16181d;
+    --emerg:#b00020; --emerg-fg:#ffffff;
+    --ok:#0a7b34; --warn:#9a5b00; --accent:#0b5cab;
+    --focus:#0b5cab; --radius:14px; --tap:56px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0e1014; --fg:#f3f5f8; --muted:#aab2bf; --line:#2a2f38;
+           --card:#1a1e25; --card-fg:#f3f5f8; --emerg:#e0264b; --accent:#5aa6ff; --focus:#5aa6ff; }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--bg); color:var(--fg);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    font-size:18px; line-height:1.45; -webkit-text-size-adjust:100%;
+  }
+  .wrap{max-width:680px; margin:0 auto; padding:0 16px 40px}
+  a{color:var(--accent)}
+  h1,h2,h3{line-height:1.2}
+  h1{font-size:1.4rem; margin:.6em 0 .3em}
+  h2{font-size:1.25rem; margin:.2em 0 .5em}
+  p{margin:.4em 0}
+  .muted{color:var(--muted)}
+  .small{font-size:.85rem}
+
+  /* ---- Demo ribbon ---- */
+  .demo{
+    background:repeating-linear-gradient(45deg,#3a2a00,#3a2a00 12px,#2e2200 12px,#2e2200 24px);
+    color:#ffd98a; text-align:center; font-weight:700; font-size:.85rem;
+    padding:6px 10px; letter-spacing:.02em;
+  }
+  /* ---- Sticky 192 header ---- */
+  header.bar{
+    position:sticky; top:0; z-index:50; background:var(--bg);
+    border-bottom:1px solid var(--line); padding:8px 16px;
+    display:flex; gap:10px; align-items:center; max-width:680px; margin:0 auto;
+  }
+  .brand{font-weight:800; font-size:1rem; flex:1; min-width:0}
+  .brand small{display:block; font-weight:500; color:var(--muted); font-size:.72rem}
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    min-height:var(--tap); padding:10px 16px; border-radius:var(--radius);
+    border:2px solid transparent; font-size:1.05rem; font-weight:700;
+    text-decoration:none; cursor:pointer; width:100%;
+  }
+  .btn:focus-visible, a:focus-visible, [tabindex]:focus-visible{
+    outline:3px solid var(--focus); outline-offset:2px;
+  }
+  .btn-192{background:var(--emerg); color:var(--emerg-fg); width:auto; padding:10px 18px}
+  .btn-192 .n{font-size:1.3rem; font-weight:900}
+  .btn-primary{background:var(--accent); color:#fff}
+  .btn-ghost{background:transparent; color:var(--fg); border-color:var(--line)}
+  .btn-block{width:100%}
+  .btn-lg{min-height:64px; font-size:1.15rem}
+
+  /* ---- Category grid ---- */
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:8px}
+  .cat{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:8px; text-align:center; background:var(--card); color:var(--card-fg);
+    border:2px solid var(--line); border-radius:var(--radius);
+    min-height:120px; padding:14px 8px; cursor:pointer; font-weight:700; font-size:1.02rem;
+  }
+  .cat svg{width:42px; height:42px}
+  .cat:active{transform:translateY(1px)}
+  .cat-crit{border-color:var(--emerg); background:rgba(176,0,32,.06)}
+  .cat-crit svg{color:var(--emerg)}
+
+  /* ---- Cards / panels ---- */
+  .panel{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:16px; margin:12px 0}
+  .hosp{border:2px solid var(--line); border-radius:var(--radius); padding:14px; margin:12px 0; background:var(--card)}
+  .hosp.best{border-color:var(--accent)}
+  .hosp h3{margin:.1em 0}
+  .row{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px}
+  .row .btn{width:auto; flex:1 1 46%}
+  .tag{display:inline-flex; align-items:center; gap:6px; font-weight:700; font-size:.85rem; padding:3px 10px; border-radius:999px}
+  .tag.open{background:rgba(10,123,52,.15); color:var(--ok)}
+  .tag.closed{background:rgba(154,91,0,.18); color:var(--warn)}
+  .tag.dist{background:rgba(11,92,171,.12); color:var(--accent)}
+  .alert{background:var(--emerg); color:#fff; border-radius:var(--radius); padding:18px; text-align:center}
+  .alert .big{font-size:1.6rem; font-weight:900; margin:.2em 0}
+  .firstaid{border-left:5px solid var(--ok); padding:6px 0 6px 14px; margin:10px 0}
+  .firstaid.dont{border-left-color:var(--emerg)}
+  ul{margin:.3em 0; padding-left:1.2em}
+  li{margin:.2em 0}
+  .back{background:none; border:none; color:var(--accent); font-size:1rem; padding:10px 4px; cursor:pointer; min-height:44px}
+  .field{display:block; width:100%; min-height:var(--tap); font-size:1.05rem; padding:10px 12px; border-radius:var(--radius); border:2px solid var(--line); background:var(--bg); color:var(--fg)}
+  label{font-weight:700; display:block; margin:10px 0 6px}
+  footer{margin-top:24px; padding-top:14px; border-top:1px solid var(--line); color:var(--muted); font-size:.8rem}
+  .visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  @media (prefers-reduced-motion: reduce){ *{transition:none!important; animation:none!important} }
 </style>
 </head>
 <body>
-<header>
-  <h1>🏥 Hospitais de Belém</h1>
-  <p>16 unidades de urgência e emergência · toque numa unidade para localizar</p>
+<div class="demo" role="note">PROTÓTIPO acadêmico — não substitui o SAMU 192. Capacidades de alta complexidade são curadoria com incerteza; confirme sempre pelo 192.</div>
+
+<header class="bar">
+  <div class="brand">Emergência Belém <small>Onde buscar ajuda agora</small></div>
+  <a class="btn btn-192" href="tel:192" aria-label="Ligar para o SAMU 192 agora">☎ <span class="n">192</span></a>
 </header>
-<div id="controles">
-  <input id="busca" placeholder="🔎 Buscar por nome ou bairro...">
-  <div id="filtros">
-    <button data-tipo="todos" class="ativo">Todos</button>
-    <button data-tipo="Hospital / Pronto-Socorro">Hospitais</button>
-    <button data-tipo="UPA">UPAs</button>
-    <button data-tipo="Unidade Básica / Municipal">Unidades</button>
-    <button id="btn-perto">📍 Perto de mim</button>
-  </div>
-</div>
-<div id="conteudo">
-  <div id="map"></div>
-  <div id="lista"></div>
-</div>
+
+<main class="wrap" id="app" tabindex="-1"></main>
+
 <script>
-const dados = {"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [-48.483188, -1.441112999952488]}, "properties": {"nome": "Fundação Santa Casa de Misericórdia do Pará", "endereco": "Rua Oliveira Belo, entre Travessa 14 de Março e Avenida Generalíssimo Deodoro", "bairro": "Umarizal", "perfil": "Obstetrícia e Neonatal", "tipo": "Hospital / Pronto-Socorro"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-48.4721, -1.36529999995499]}, "properties": {"nome": "Hospital Dr. Abelardo Santos", "endereco": "Rodovia Augusto Montenegro, esquina com  a Rua 8 de Maio", "bairro": "Campina de Icoaraci", "perfil": "Pediatria (até 12 Anos) e Obstetrícia", "tipo": "Hospital / Pronto-Socorro"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-48.461141, -1.144421999962269]}, "properties": {"nome": "Hospital Municipal de Mosqueiro", "endereco": "Rua 15 de Novembro", "bairro": "Vila - Mosqueiro", "perfil": "Clínica Básica Geral, Pediatria e Traumato Básica", "tipo": "Hospital / Pronto-Socorro"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-48.477025, -1.452651999952113]}, "properties": {"nome": "Hospital Público da Mulher Nossa Senhora de Nazaré", "endereco": "Avenida Gentil Bittencourt, entre a Travessa Casemiro de Abreu e a Avenida José Bonifácio", "bairro": "São Bras", "perfil": "Violência Sexual e Violência Doméstica", "tipo": "Hospital / Pronto-Socorro"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-48.46200000000001, -1.462999999951768]}, "properties": {"nome": "Hospital de Clínicas Gaspar Viana", "endereco": "Tv. Alferes Costa, S/N", "bairro": "Pedreira", "perfil": "Cardiologia, Psiquiatria e Nefrologia", "tipo": "Hospital / Pronto-Socorro"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-48.46337800000001, -1.458924999951904]}, "properties": {"nome": "Hospital e Pronto Socorro Dr. Humberto Maradei", "endereco": "Rua Augusto Corrêa, próximo à passarela do Campus da UFPA", "bairro": "Guamá", "perfil": "Clínica Geral e Cirúrgica", "tipo": "Hospital / Pronto-Socorro"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-48.473551, -1.444982999952366]}, "properties": {"nome": "Hospital e Pronto Socorro Dr. Mario Pinotti", "endereco": "Travessa 14 de Março entre Bernal do Couto e Jerônimo Pimentel", "bairro": "Umarizal", "perfil": "Clínica Geral e Cirúrgica", "tipo": "Hospital / Pronto-Socorro"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-48.451425, -1.337817999955898]}, "properties": {"nome": "Hospital e Pronto Socorro Dr. Roberto Macedo", "endereco": "Rodovia Augusto Montenegro, próximo à entrada", "bairro": "Begui", "perfil": "Clínica Geral, Pediatria e Cirúrgica", "tipo": "Hospital / Pronto-Socorro"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-48.456298, -1.315891999956614]}, "properties": {"nome": "UPA DAICO", "endereco": "Rua Paraíso, S/N", "bairro": "Parque Guajará", "perfil": "Clínica Médica e Pediátrica", "tipo": "UPA"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-48.468889, -1.421527999953139]}, "properties": {"nome": "UPA DASAC", "endereco": "Avenida Dr. Freitas, esquina com a Canal do Galo", "bairro": "Sacramenta", "perfil": "Clínica Médica e Pediátrica", "tipo": "UPA"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-48.450476, -1.471112999951506]}, "properties": {"nome": "UPA D’Água I", "endereco": "Avenida Perimetral, s/n", "bairro": "Guamá", "perfil": "Clínica Médica e Pediátrica", "tipo": "UPA"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-48.490892, -1.464669999951714]}, "properties": {"nome": "UPA D’Água II", "endereco": "Avenida Roberto Camelier, esquina com a Travessa Quintino Bocaiúva", "bairro": "Jurunas", "perfil": "Clínica Médica e Pediátrica", "tipo": "UPA"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-48.459345, -1.295709999957279]}, "properties": {"nome": "UPA Marambaia", "endereco": "Avenida Dalva, entre a Rua 27 de Dezembro e a Passagem São Sebastião", "bairro": "Marambaia", "perfil": "Clínica Médica e Pediátrica", "tipo": "UPA"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-48.5558, -1.263699999958335]}, "properties": {"nome": "Unidade Municipal de Saúde de Cotijuba", "endereco": "RUA MAGALHÃES BARATA, COTIJUBA", "bairro": "Centro de Cotijuba", "perfil": "Clínica Médica Básica Em Casos Graves → Encaminha Para Belém (continente) Via Transporte Fluvial Ou Samu", "tipo": "Unidade Básica / Municipal"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-48.4675129, -1.260816099958435]}, "properties": {"nome": "Unidade Municipal de Saúde de Outeiro", "endereco": "R. Manoel Barata, 2373–2397 – São João do Outeiro", "bairro": "Outeiro", "perfil": "Clínica Médica Básica, Casos Graves → Encaminhados Para Hospitais Maiores, Como Abelardo Santos", "tipo": "Unidade Básica / Municipal"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-48.438889, -1.12158299996302]}, "properties": {"nome": "Urg. e Emerg. Básica de Carananduba", "endereco": "Rodovia BL-13, principal acesso à Praia de Carananduba", "bairro": "Carananduba", "perfil": "Clínica Médica Básica", "tipo": "Unidade Básica / Municipal"}}]};
-const CORES = {"Hospital / Pronto-Socorro":"#e53935","UPA":"#fb8c00","Unidade Básica / Municipal":"#43a047"};
-const CURTO = {"Hospital / Pronto-Socorro":"HOSPITAL","UPA":"UPA","Unidade Básica / Municipal":"UNIDADE"};
-let posUsuario=null, filtroTipo='todos', termo='';
+"use strict";
+/* =========================================================================
+   Protótipo — Emergência Belém. HTML único, offline, sem bibliotecas.
+   Lógica: triagem de 3 camadas com fail-safe para o 192.
+   DADOS: oficiais do CNES/DATASUS (data/hospitais-belem.json), injetados por
+   scripts/inline-data.mjs. Capacidades hemodinâmica/TC-AVC/soro = pendentes;
+   papéis clínicos e textos de primeiros socorros pendentes de revisão clínica.
+   ========================================================================= */
 
-const map=L.map('map').setView([-1.40,-48.45],11);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);
+const DATA_STAMP = "CNES/DATASUS (15/06/2026) + curadoria clínica de capacidades (24/06/2026)";
 
-function semAcento(s){return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();}
-function haversine(a,b){const R=6371,dLat=(b[0]-a[0])*Math.PI/180,dLon=(b[1]-a[1])*Math.PI/180;
-  const x=Math.sin(dLat/2)**2+Math.cos(a[0]*Math.PI/180)*Math.cos(b[0]*Math.PI/180)*Math.sin(dLon/2)**2;
-  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
+/* ==DADOS== gerado por scripts/inline-data.mjs a partir de data/hospitais-belem.json (CNES) */
+const UNIDADES = [{"nome":"Hospital Regional Publico Dr Abelardo Santos","bairro":"Icoaraci","tel":null,"lat":-1.3004163871301304,"lng":-48.46940517425537,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Voo De Liberdade","bairro":"Batista Campos","tel":"(091)983123992","lat":-1.4584699926994966,"lng":-48.49161554761075,"h24":false,"rmb":false,"tipo":"Hospital Especializado","cap":{}},{"nome":"Hospital Oftalmologico Do Para","bairro":"Marco","tel":"(91)984055900","lat":-1.456,"lng":-48.504,"h24":true,"rmb":false,"tipo":"Hospital Especializado","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Hospital Adventista De Belem","bairro":"Marco","tel":"(91)30848686","lat":-1.4356144,"lng":-48.459703,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Hospital De Referencia Em Oftalmologia Rodrigues Landim","bairro":"Cremacao","tel":"98984534940","lat":-1.4578946,"lng":-48.4835083,"h24":false,"rmb":false,"tipo":"Hospital Especializado","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Hospital De Aeronautica De Belem","bairro":"Souza","tel":"32156550","lat":-1.4214907,"lng":-48.4531692,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Hospital Pio Xii","bairro":"Campina","tel":"9181121118","lat":-1.4522951,"lng":-48.4956323,"h24":true,"rmb":false,"tipo":"Hospital Especializado","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Hospital Porto Dias","bairro":"Marco","tel":"(91)3184-9999","lat":-1.4370391,"lng":-48.4607645,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Hospital Unimed Prime","bairro":"Sao Bras","tel":"(91)983894127","lat":-1.4593836,"lng":-48.4729933,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Upa Marambaia","bairro":"Marambaia","tel":null,"lat":-1.398636,"lng":-48.4428175,"h24":true,"rmb":false,"tipo":"Pronto Atendimento (Upa / Unidade De Pronto Atendimento)","cap":{"ps_geral":true}},{"nome":"Hospital De Retaguarda Dom Vicente Zico","bairro":"Marco","tel":"91 31846211","lat":-1.4348152,"lng":-48.4569076,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Upa Jurunas","bairro":"Jurunas","tel":"91 31846116","lat":-1.4584258,"lng":-48.487549,"h24":true,"rmb":false,"tipo":"Pronto Atendimento (Upa / Unidade De Pronto Atendimento)","cap":{"ps_geral":true}},{"nome":"Hospital De Campanha Covid 19 Belem","bairro":"Marco","tel":null,"lat":-1.421371,"lng":-48.456766,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{}},{"nome":"Hospital Universitario Joao De Barros Barreto","bairro":"Guama","tel":"91 2836105","lat":-1.4580465,"lng":-48.4654191,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true}},{"nome":"Unidade Municipal De Saude De Cotijuba","bairro":"Cotijuba","tel":"(91)36171100","lat":-1.26361,"lng":-48.5558,"h24":true,"rmb":false,"tipo":"Centro De Saude / Unidade Basica De Saude","cap":{"ps_geral":true}},{"nome":"Hospital Redentor","bairro":"Umarizal","tel":"(91)33525255","lat":-1.4373235,"lng":-48.4899868,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Hospital De Clinicas Gaspar Viana","bairro":"Marco","tel":"091 2760601","lat":-1.4103414,"lng":-48.4799141,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true,"hemodinamica":{"v":true,"inc":"media","obs":"Hospital de Clínicas Gaspar Vianna — referência pública de cardiologia/hemodinâmica. Confirmar plantão 24h/7d por telefone/192. Em dor no peito, ligue 192 — não dirija até o hospital por conta própria, pode haver parada cardíaca no caminho."},"avc_tc_neuro":{"v":true,"inc":"alta","obs":"Gaspar Vianna — tem TC e neuro (AVC provável); NÃO confirma trombólise 24h. Em sinais de AVC, ligue 192 e informe a hora de início dos sintomas — tempo é cérebro. A regulação define o destino."}}},{"nome":"Hospital Samaritano","bairro":"Marco","tel":"(91)32770000","lat":null,"lng":null,"h24":false,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Maternidade Do Povo Filial","bairro":"Souza","tel":"(91)32154650","lat":-1.456,"lng":-48.504,"h24":true,"rmb":false,"tipo":"Hospital Especializado","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Hospital D Luiz I","bairro":"Umarizal","tel":"(091) 3215-4444","lat":-1.4569265,"lng":-48.4855122,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Unidade Municipal De Saude De Icoaraci","bairro":"Centro","tel":"(91)32270270","lat":-1.30189,"lng":-48.48782,"h24":true,"rmb":false,"tipo":"Centro De Saude / Unidade Basica De Saude","cap":{"ps_geral":true}},{"nome":"Centrocardio","bairro":"Batista Campos","tel":"91 33233525","lat":-1.456906,"lng":-48.4947731,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Unidade Municipal De Saude Outeiro","bairro":"Outeiro","tel":"(91) 3267-1029","lat":-1.25861,"lng":-48.827,"h24":true,"rmb":false,"tipo":"Centro De Saude / Unidade Basica De Saude","cap":{"ps_geral":true}},{"nome":"Hospital Santa Teresinha","bairro":"Nazare","tel":"(91) 32498461","lat":-1.4516311,"lng":-48.4803093,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Policlinica Infantil De Nazare","bairro":"Nazare","tel":"(91)32412233","lat":null,"lng":null,"h24":true,"rmb":false,"tipo":"Hospital Especializado","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Maternidade Do Povo Matriz","bairro":"Comercio","tel":"(91)32413644","lat":-1.4564792,"lng":-48.4958962,"h24":true,"rmb":false,"tipo":"Hospital Especializado","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Hospital Santa Clara","bairro":"Marco","tel":"(91)32420353","lat":-1.4555158076168635,"lng":-48.499596118927,"h24":true,"rmb":false,"tipo":"Hospital Especializado","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Unidade Municipal Do Bengui","bairro":"Bengui","tel":"(91) 3279-5868","lat":-1.37816,"lng":-48.45554,"h24":true,"rmb":false,"tipo":"Centro De Saude / Unidade Basica De Saude","cap":{"ps_geral":true}},{"nome":"Hospital Ophir Loyola","bairro":"Sao Braz","tel":"(091)32656500","lat":-1.452778,"lng":-48.472222,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Unidade Municipal De Saude Baia Do Sol","bairro":"Baia Do Sol","tel":"91 3773 - 1166","lat":-1.06583,"lng":-48.33197,"h24":true,"rmb":false,"tipo":"Centro De Saude / Unidade Basica De Saude","cap":{"ps_geral":true}},{"nome":"Hospital Nossa Senhora De Nazare","bairro":"Canudos","tel":"(91)32746266","lat":null,"lng":null,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Hospital Pronto Socorro Municipal Mario Pinotti","bairro":"Umarizal","tel":"(91)31846301","lat":-1.4396878,"lng":-48.4808636,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Unidade Municipal De Saude Do Tapana","bairro":"Tapana","tel":"(91)32781002","lat":-1.34779,"lng":-48.46709,"h24":true,"rmb":false,"tipo":"Centro De Saude / Unidade Basica De Saude","cap":{"ps_geral":true}},{"nome":"Hospital Serzedelo Correa","bairro":"Batista Campos","tel":"(91)32230543","lat":null,"lng":null,"h24":true,"rmb":false,"tipo":"Hospital Especializado","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Hospital Ordem Terceira","bairro":"Centro","tel":"(91)32214078","lat":-1.4485527,"lng":-48.4993827,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Hpsm Dr Humberto Maradei Pereira","bairro":"Guama","tel":"(91)31846210","lat":-1.475456466228528,"lng":-48.491446640430205,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Unidade Basica De Saude Do Jurunas","bairro":"Jurunas","tel":"(91)32724881","lat":-1.47289,"lng":-48.49193,"h24":true,"rmb":false,"tipo":"Centro De Saude / Unidade Basica De Saude","cap":{"ps_geral":true}},{"nome":"Unidade De Urgencia E Emergencia Basica De Carananduba","bairro":"Carananduba","tel":"(91)37721338","lat":-1.09354,"lng":-48.40973,"h24":true,"rmb":false,"tipo":"Centro De Saude / Unidade Basica De Saude","cap":{"ps_geral":true}},{"nome":"Clisa","bairro":"Cruzeiro","tel":"(9132270308","lat":null,"lng":null,"h24":false,"rmb":false,"tipo":"Hospital Especializado","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Hospital Abelardo Santos","bairro":"Cruzeiro","tel":"32042832","lat":-1.302762204,"lng":-48.487929134,"h24":true,"rmb":false,"tipo":"Hospital Especializado","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Santa Casa De Misericordia Do Para","bairro":"Umarizal","tel":"0319140092241","lat":-1.44089898734057,"lng":-48.4808266512803,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true,"obstetrica_alto_risco":{"v":true,"inc":"baixa","obs":"Fundação Santa Casa de Misericórdia do Pará — referência materno-infantil/obstétrica e neonatal de alto risco."}}},{"nome":"Psique Clinica De Reabilitacao Psiquiatrica","bairro":"Batista Campos","tel":null,"lat":-1.457559,"lng":-48.4922683,"h24":false,"rmb":false,"tipo":"Hospital Especializado","cap":{"ps_geral":true}},{"nome":"Hospital Amazonia","bairro":"Sao Bras","tel":"(91)30845422","lat":-1.4562397702707397,"lng":-48.503753542900085,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Hospital Guadalupe","bairro":"Campina","tel":"(91)40059877","lat":-1.456906,"lng":-48.4947731,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Incor","bairro":"Sao Braz","tel":"(91)2174000","lat":null,"lng":null,"h24":true,"rmb":false,"tipo":"Hospital Especializado","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Hospital Hsm","bairro":"Marco","tel":"(91)31817000","lat":-1.4374474289459604,"lng":-48.468950160538746,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Clinica Do Bebe","bairro":"Nazare","tel":"(91)3344 - 6700","lat":null,"lng":null,"h24":true,"rmb":false,"tipo":"Hospital Especializado","cap":{}},{"nome":"Caes","bairro":"Umarizal","tel":"91-33497223","lat":-1.4456937,"lng":-48.4856272,"h24":true,"rmb":false,"tipo":"Hospital Especializado","cap":{}},{"nome":"Hospital Municipal De Mosqueiro","bairro":"Mosqueiro","tel":"(91)37711229","lat":-1.1548313,"lng":-48.4713783,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Hospital Maradei","bairro":"Nazare","tel":"091 33211700","lat":-1.4516865,"lng":-48.4842736,"h24":true,"rmb":false,"tipo":"Hospital Especializado","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Clinica Medica Voo De Liberdade Unidade O De Almeida","bairro":"Batista Campos","tel":"(91)993814604","lat":-1.4584216058343404,"lng":-48.491673118365135,"h24":true,"rmb":false,"tipo":"Hospital Especializado","cap":{}},{"nome":"Clinica Psiquiatrica New Life","bairro":"Curio Utinga","tel":"(91)981372441","lat":-1.4322086,"lng":-48.4462877,"h24":true,"rmb":false,"tipo":"Hospital Especializado","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Hospital Pronto Socorro Do Bengui Dr Roberto Macedo","bairro":"Parque Verde","tel":null,"lat":-1.31821,"lng":-48.45289,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Hospital Cion","bairro":"Reduto","tel":"(91)985675354","lat":-1.4489024,"lng":-48.4926512,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Instituto Da Mulher","bairro":"Marco","tel":"(91)31817000","lat":null,"lng":null,"h24":true,"rmb":false,"tipo":"Hospital Especializado","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Hospital Do Coracao","bairro":"Umarizal","tel":"3084-9000","lat":-1.4391403,"lng":-48.4873336,"h24":true,"rmb":false,"tipo":"Hospital Especializado","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Clinica Dr Mario Machado","bairro":"Fatima","tel":"(91)32260453","lat":-1.456,"lng":-48.504,"h24":true,"rmb":false,"tipo":"Hospital Especializado","cap":{}},{"nome":"Hospital Publico Da Mulher Senhora De Nazare","bairro":"Sao Bras","tel":null,"lat":-1.459845,"lng":-48.487825,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true}},{"nome":"Maternidade Saude Da Crianca","bairro":"Umarizal","tel":"09194008 9550","lat":null,"lng":null,"h24":true,"rmb":false,"tipo":"Hospital Especializado","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Saude Hospital E Maternidade","bairro":"Umarizal","tel":"(91)984184189","lat":-1.4394386,"lng":-48.4900577,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Hospital Naval De Belem","bairro":"Centro","tel":null,"lat":-1.4655652,"lng":-48.505664,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Hospital Vida Mamaray","bairro":"Marco","tel":"9140061300","lat":null,"lng":null,"h24":true,"rmb":false,"tipo":"Hospital Especializado","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Hospital Layr Maia","bairro":"Nazare","tel":"32175222","lat":-1.4507053,"lng":-48.4800299,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Hospital Geral Unimed","bairro":"Fatima","tel":"9140095869","lat":-1.456,"lng":-48.504,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Unidade De Emergencia Doca","bairro":"Reduto","tel":null,"lat":-1.4492081,"lng":-48.4875491,"h24":true,"rmb":false,"tipo":"Pronto Socorro Geral","cap":{"ps_geral":true}},{"nome":"Porto Dias Prime","bairro":"Marco","tel":"91 3184 - 9999","lat":null,"lng":null,"h24":true,"rmb":false,"tipo":"Hospital Especializado","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Unidade De Urgencia E Emergencia Batista Campos","bairro":"Batista Campos","tel":"40095731","lat":-1.458256,"lng":-48.4940217,"h24":true,"rmb":false,"tipo":"Pronto Atendimento (Upa / Unidade De Pronto Atendimento)","cap":{"ps_geral":true}},{"nome":"Upa Daico","bairro":"Parque Guajara","tel":"(091) 3247-8334","lat":-1.3313825,"lng":-48.452285,"h24":true,"rmb":false,"tipo":"Pronto Atendimento (Upa / Unidade De Pronto Atendimento)","cap":{"ps_geral":true}},{"nome":"Climasa","bairro":"Cruzeiro","tel":"(9132270308","lat":null,"lng":null,"h24":false,"rmb":false,"tipo":"Hospital Especializado","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Hospital Norte Saude","bairro":"Canudos","tel":"(91)32746266","lat":null,"lng":null,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true,"neonatal_pediatrica":true}},{"nome":"Hospital Publico Estadual Galileu","bairro":"Una","tel":"91 32141095","lat":-1.3694786,"lng":-48.4211539,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true,"trauma_referencia":{"v":true,"inc":"baixa_media","obs":"HPEG (Hospital Público Estadual Galileu) — referência de trauma ORTOPÉDICO. Em politrauma, acidente grave ou inconsciência, o destino é definido pela regulação do 192 (não necessariamente esta unidade)."}}},{"nome":"Hospital Oncologico Infantil Octavio Lobo","bairro":"Sao Braz","tel":"(91) 3182-4667","lat":-1.4516273,"lng":-48.4805975,"h24":true,"rmb":false,"tipo":"Hospital Especializado","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Hospital Jean Bitar","bairro":"Umarizal","tel":null,"lat":-1.4400725608536988,"lng":-48.48724062254384,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Upa Dasac","bairro":"Sacramenta","tel":null,"lat":-1.45596091060936,"lng":-48.506269454956055,"h24":true,"rmb":false,"tipo":"Pronto Atendimento (Upa / Unidade De Pronto Atendimento)","cap":{"ps_geral":true}},{"nome":"Hospital Rio Mar","bairro":"Marco","tel":"(91)984110465","lat":-1.4450931,"lng":-48.467582,"h24":true,"rmb":false,"tipo":"Hospital Especializado","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Hospital Pro Infantil","bairro":"Marco","tel":"9140061329","lat":-1.435,"lng":-48.463,"h24":true,"rmb":false,"tipo":"Hospital Especializado","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Hospital Pediatrico Unimed","bairro":"Umarizal","tel":"91 40095116","lat":-1.44,"lng":-48.485,"h24":true,"rmb":false,"tipo":"Hospital Especializado","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Caes","bairro":"Batista Campos","tel":"91-32234488","lat":-1.4574649,"lng":-48.4927802,"h24":true,"rmb":false,"tipo":"Hospital Especializado","cap":{}},{"nome":"Hospital Geral De Belem","bairro":"Umarizal","tel":"(091)32898000","lat":-1.4381118,"lng":-48.4881477,"h24":true,"rmb":false,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Upa Dagua I","bairro":"Terra Firme","tel":null,"lat":-1.4517685,"lng":-48.5026211,"h24":true,"rmb":false,"tipo":"Pronto Atendimento (Upa / Unidade De Pronto Atendimento)","cap":{"ps_geral":true}},{"nome":"Clinica 24 Horas Guanabara","bairro":"Guanabara","tel":null,"lat":-1.401632,"lng":-48.42329,"h24":true,"rmb":true,"tipo":"Pronto Atendimento (Upa / Unidade De Pronto Atendimento)","cap":{"ps_geral":true}},{"nome":"Psique Clinica De Reabilitacao Psiquiatrica","bairro":"Atalaia","tel":null,"lat":-1.3337742,"lng":-48.4085617,"h24":false,"rmb":true,"tipo":"Hospital Especializado","cap":{"ps_geral":true}},{"nome":"Hospital Estadual Materno Infantil De Ananindeua Anita Ger","bairro":"Centro","tel":null,"lat":-1.3670351310162812,"lng":-48.37091445922851,"h24":true,"rmb":true,"tipo":"Hospital Especializado","cap":{"ps_geral":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Hospital Modelo De Ananindeua","bairro":"Coqueiro","tel":"91 32841500","lat":-1.3686547236170026,"lng":-48.372159004211426,"h24":true,"rmb":true,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Upa Paar","bairro":"Paar","tel":null,"lat":-1.3687135,"lng":-48.372066,"h24":true,"rmb":true,"tipo":"Pronto Atendimento (Upa / Unidade De Pronto Atendimento)","cap":{"ps_geral":true}},{"nome":"Inisa","bairro":"Centro","tel":"(91)2550800 - 3286-2508","lat":null,"lng":null,"h24":true,"rmb":true,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true}},{"nome":"Hospital Das Clinicas De Ananindeua","bairro":"Aguas Brancas","tel":"(11)3255-2593","lat":-1.389291025850096,"lng":-48.374176025390625,"h24":true,"rmb":true,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true}},{"nome":"Hospital E Maternidade Frei Samarate","bairro":"Coqueiro","tel":"(91)263-9034","lat":null,"lng":null,"h24":false,"rmb":true,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true}},{"nome":"Hospital E Pronto Socorro Municipal De Ananindeua","bairro":"Coqueiro","tel":"(91)3245-0219","lat":-1.3469692,"lng":-48.4510467,"h24":true,"rmb":true,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Hospemat Dr Helio Alves","bairro":"Coqueiro","tel":"(91)2633878","lat":null,"lng":null,"h24":false,"rmb":true,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Hospital Santa Maria","bairro":"Coqueiro","tel":"(91)3275-1510","lat":null,"lng":null,"h24":false,"rmb":true,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Hospital E Maternidade Sao Camilo","bairro":"Coqueiro","tel":"(91)2351339","lat":null,"lng":null,"h24":true,"rmb":true,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true}},{"nome":"Maternidade Sagrada Familia De Ananindeua","bairro":"Coqueiro","tel":null,"lat":-1.3536814948745055,"lng":-48.40254306793213,"h24":true,"rmb":true,"tipo":"Hospital Especializado","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Clinica Pediatrica Nossa Senhora De Fatima","bairro":"Coqueiro","tel":null,"lat":null,"lng":null,"h24":false,"rmb":true,"tipo":"Hospital Especializado","cap":{"ps_geral":true,"trauma_proxy":true,"neonatal_pediatrica":true}},{"nome":"Clinica Santa Edwiges","bairro":"Coqueiro","tel":null,"lat":-1.366766986440513,"lng":-48.40425968170166,"h24":false,"rmb":true,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Hospital Metropolitano De Urgencia E Emergencia","bairro":"Guanabara","tel":"(91)3073-3700","lat":-1.3923155,"lng":-48.4221982,"h24":true,"rmb":true,"tipo":"Pronto Socorro Especializado","cap":{"ps_geral":true,"trauma_proxy":true,"trauma_referencia":{"v":true,"inc":"baixa","obs":"HMUE (Metropolitano de Urgência e Emergência) — referência de trauma grave/politrauma, queimados e neurocirurgia da RMB; único Centro de Queimados de referência do Norte. Fica em Ananindeua: distância não é destino — a regulação do 192 pode redirecionar."},"avc_tc_neuro":{"v":true,"inc":"alta","obs":"HMUE — tem TC e neuro/neurocirurgia; NÃO confirma trombólise 24h. Em sinais de AVC (FAST), ligue 192 imediatamente e informe a HORA EXATA em que os sintomas começaram — há janela de tempo para o tratamento. A regulação do 192 define o destino."}}},{"nome":"Upa Aguas Lindas","bairro":"Aguas Lindas","tel":null,"lat":-1.3877437499999998,"lng":-48.39871647429159,"h24":true,"rmb":true,"tipo":"Pronto Atendimento (Upa / Unidade De Pronto Atendimento)","cap":{"ps_geral":true}},{"nome":"Upa Jaderlandia","bairro":"Atalaia","tel":null,"lat":-1.4030615,"lng":-48.3720639,"h24":true,"rmb":true,"tipo":"Pronto Atendimento (Upa / Unidade De Pronto Atendimento)","cap":{"ps_geral":true}},{"nome":"Unimed Br Hospital Julio Nobre Cruz","bairro":"Coqueiro","tel":null,"lat":-1.3642722,"lng":-48.374721,"h24":true,"rmb":true,"tipo":"Pronto Socorro Geral","cap":{"ps_geral":true}},{"nome":"Upa 24 Horas Tipo Iii Dom Helder Camara","bairro":"Coqueiro","tel":"32730281","lat":-1.368585006077245,"lng":-48.372148275375366,"h24":true,"rmb":true,"tipo":"Pronto Atendimento (Upa / Unidade De Pronto Atendimento)","cap":{"ps_geral":true}},{"nome":"Upa Icui Daniel Berg","bairro":"Icui Guajara","tel":null,"lat":-1.3263116,"lng":-48.396433,"h24":true,"rmb":true,"tipo":"Pronto Atendimento (Upa / Unidade De Pronto Atendimento)","cap":{"ps_geral":true}},{"nome":"Hospital Oftalmologico Do Para","bairro":"Cidade Nova","tel":"32635910","lat":-1.3502926,"lng":-48.4056895,"h24":false,"rmb":true,"tipo":"Hospital Especializado","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Hospital Santa Maria De Ananindeua","bairro":"Curucamba","tel":"91 32756822","lat":-1.355483435626243,"lng":-48.38687896728515,"h24":true,"rmb":true,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true}},{"nome":"Clinica Materno Infantil Hanna","bairro":"Coqueiro","tel":"91-32633701","lat":null,"lng":null,"h24":true,"rmb":true,"tipo":"Hospital Geral","cap":{"ps_geral":true,"trauma_proxy":true,"obstetrica":true,"neonatal_pediatrica":true}},{"nome":"Hospital Municipal Infantil Dr Celso Leao","bairro":"Coqueiro","tel":null,"lat":-1.3610608627797405,"lng":-48.39486122131348,"h24":true,"rmb":true,"tipo":"Hospital Especializado","cap":{"ps_geral":true,"trauma_proxy":true}},{"nome":"Upa Mariguela","bairro":"Aura","tel":null,"lat":-1.368783432915858,"lng":-48.37207317352295,"h24":true,"rmb":true,"tipo":"Pronto Atendimento (Upa / Unidade De Pronto Atendimento)","cap":{"ps_geral":true}},{"nome":"Upa Distrito Dr Nonato Sanova","bairro":"Distrito Industrial","tel":null,"lat":-1.3428783,"lng":-48.3682393,"h24":true,"rmb":true,"tipo":"Pronto Atendimento (Upa / Unidade De Pronto Atendimento)","cap":{"ps_geral":true}}];
+const BAIRROS = [{"nome":"Baia Do Sol","lat":-1.06583,"lng":-48.33197},{"nome":"Batista Campos","lat":-1.45785,"lng":-48.49286},{"nome":"Bengui","lat":-1.37816,"lng":-48.45554},{"nome":"Campina","lat":-1.4546,"lng":-48.4952},{"nome":"Carananduba","lat":-1.09354,"lng":-48.40973},{"nome":"Centro","lat":-1.40534,"lng":-48.49762},{"nome":"Comercio","lat":-1.45648,"lng":-48.4959},{"nome":"Cotijuba","lat":-1.26361,"lng":-48.5558},{"nome":"Cremacao","lat":-1.45789,"lng":-48.48351},{"nome":"Cruzeiro","lat":-1.30276,"lng":-48.48793},{"nome":"Curio Utinga","lat":-1.43221,"lng":-48.44629},{"nome":"Fatima","lat":-1.456,"lng":-48.504},{"nome":"Guama","lat":-1.46675,"lng":-48.47843},{"nome":"Icoaraci","lat":-1.30042,"lng":-48.46941},{"nome":"Jurunas","lat":-1.46566,"lng":-48.48974},{"nome":"Marambaia","lat":-1.39864,"lng":-48.44282},{"nome":"Marco","lat":-1.43682,"lng":-48.47172},{"nome":"Mosqueiro","lat":-1.15483,"lng":-48.47138},{"nome":"Nazare","lat":-1.45134,"lng":-48.48154},{"nome":"Outeiro","lat":-1.25861,"lng":-48.827},{"nome":"Parque Guajara","lat":-1.33138,"lng":-48.45229},{"nome":"Parque Verde","lat":-1.31821,"lng":-48.45289},{"nome":"Reduto","lat":-1.44906,"lng":-48.4901},{"nome":"Sacramenta","lat":-1.45596,"lng":-48.50627},{"nome":"Sao Bras","lat":-1.45849,"lng":-48.48819},{"nome":"Sao Braz","lat":-1.4522,"lng":-48.47641},{"nome":"Souza","lat":-1.43875,"lng":-48.47858},{"nome":"Tapana","lat":-1.34779,"lng":-48.46709},{"nome":"Terra Firme","lat":-1.45177,"lng":-48.50262},{"nome":"Umarizal","lat":-1.44173,"lng":-48.48606},{"nome":"Una","lat":-1.36948,"lng":-48.42115}];
+/* ==/DADOS== */
 
-const todos=[];
-const itens=dados.features.map((f,i)=>{
-  const p=f.properties,c=f.geometry.coordinates,latlng=[c[1],c[0]];
-  todos.push(latlng);
-  const m=L.circleMarker(latlng,{radius:9,color:'#fff',weight:2,fillColor:CORES[p.tipo]||'#3388ff',fillOpacity:.95});
-  m.bindPopup('<b>'+p.nome+'</b><br><small>'+CURTO[p.tipo]+'</small><br>'+(p.endereco||'')+(p.bairro?' — '+p.bairro:''));
-  m.on('click',()=>selecionar(i,false));
-  return {i,p,latlng,m,dist:null};
-});
-map.fitBounds(todos,{padding:[30,30]});
-const elLista=document.getElementById('lista');
+/* ---- Emergências (v1) ---- */
+const ICN = {
+  alerta:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3 2 20h20L12 3z"/><path d="M12 9v5"/><circle cx="12" cy="17.5" r="1" fill="currentColor"/></svg>',
+  peconhento:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 3c4 0 4 4 0 4S3 11 7 11s5 4 1 6-2 4 2 4"/><circle cx="18" cy="5" r="1.4" fill="currentColor"/></svg>',
+  infarto:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7-4.6-9.3-9C1 8.7 2.5 5.5 5.7 5.5c1.9 0 3.2 1.1 3.9 2.2.4-.1.8-.1 1.2 0 .7-1.1 2-2.2 3.9-2.2 3.2 0 4.7 3.2 3 6.5C19 16.4 12 21 12 21z"/></svg>',
+  avc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 3a4 4 0 0 0-4 4 4 4 0 0 0-1 6 3.5 3.5 0 0 0 3 5 3 3 0 0 0 5 .5 3 3 0 0 0 5-.5 3.5 3.5 0 0 0 3-5 4 4 0 0 0-1-6 4 4 0 0 0-4-4 3 3 0 0 0-2 1 3 3 0 0 0-2-1z"/></svg>',
+  trauma:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 7h13l3 4v4h-2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/><path d="M3 7v8h2"/></svg>',
+  obstetrica:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="7" r="3"/><path d="M12 10c-3 0-5 2-5 6v5h10v-5c0-2-1-3.5-2.5-4.7"/></svg>',
+  pediatrica:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="6" r="2.5"/><path d="M7 13c0-2.5 2-4 5-4s5 1.5 5 4M9 13v7M15 13v7"/></svg>',
+  queimadura:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c1 4-2 5-2 8a4 4 0 0 0 8 0c0-1-.3-2-1-3 .3 2-1 3-2 3 .5-3-2-5-3-8z"/><path d="M8 12c-1 1-2 2.5-2 4a6 6 0 0 0 12 0c0-.7-.2-1.4-.5-2-.3 2-2 3-3.5 3 .3-2-1-3.5-2-4.5C9.7 14 9 13 8 12z"/></svg>',
+  nao_sei:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 0 1 4.5 1.5c0 1.7-2 2-2 3.5"/><circle cx="12" cy="17.5" r="1" fill="currentColor"/></svg>'
+};
 
-function visiveis(){return itens.filter(it=>{
-  if(filtroTipo!=='todos'&&it.p.tipo!==filtroTipo)return false;
-  if(termo&&!semAcento(it.p.nome+' '+it.p.bairro).includes(semAcento(termo)))return false;
-  return true;});}
+const EMERGENCIAS = {
+  parada:{ titulo:"Não respira ou não responde", icone:ICN.alerta, forcaC1:true,
+    socorros:{ fazer:["LIGUE 192 imediatamente","Se não respira (ou só dá suspiros arquejantes, que NÃO contam como respirar): comece a RCP","Empurre forte e rápido no centro do peito — cerca de 5 cm de profundidade, 100 a 120 vezes por minuto (no ritmo da música “Stayin' Alive”)","Não pare as compressões até a ajuda chegar ou a pessoa reagir"],
+               naoFazer:["NÃO interrompa as compressões para ficar checando o pulso","NÃO tenha medo de comprimir com força — a RCP salva vidas"] } },
+  engasgo:{ titulo:"Engasgo / sufocação", icone:ICN.alerta, forcaC1:true,
+    socorros:{ fazer:["LIGUE 192","Adulto/criança que não consegue tossir, falar nem respirar: faça a manobra de Heimlich (compressões na barriga, por trás)","Bebê com menos de 1 ano: deite-o de bruços sobre o seu braço, com a cabeça mais baixa que o corpo, e dê 5 tapas firmes entre as costas; depois vire-o de barriga para cima e faça 5 compressões com 2 dedos no centro do peito. Repita","Se a pessoa desmaiar, comece a RCP"],
+               naoFazer:["NÃO coloque o dedo na garganta às cegas","NÃO dê água, comida nem remédio"] } },
+  alergia:{ titulo:"Alergia grave (inchaço, falta de ar)", icone:ICN.alerta, forcaC1:true,
+    socorros:{ fazer:["LIGUE 192 imediatamente","Se tiver caneta de adrenalina (epinefrina), aplique na lateral da coxa","Deite a pessoa de costas com as pernas elevadas; se estiver com muita falta de ar, deixe-a sentada"],
+               naoFazer:["NÃO deixe a pessoa de pé/sentada se estiver desmaiando","NÃO dê comida ou bebida"] } },
+  convulsao:{ titulo:"Convulsão / ataque", icone:ICN.alerta, forcaC1:true,
+    socorros:{ fazer:["Proteja a cabeça da pessoa com algo macio","Deite-a de lado quando possível, para não engasgar","Marque a hora de início e LIGUE 192 — com urgência se durar mais de 5 minutos, se repetir, ou se não acordar depois"],
+               naoFazer:["NÃO segure a pessoa à força","NÃO coloque NADA na boca (nem colher, dedo ou pano)","NÃO dê água, comida ou remédio durante a crise"] } },
+  peconhento:{ titulo:"Picada (escorpião / cobra / aranha)", icone:ICN.peconhento, rotas:["soro_antiveneno","ps_geral"], tox:true,
+    confirmar:"Nem todo hospital tem o SORO certo. Ligue 192 ou o Disque-Intoxicação e confirme o soro ANTES de ir. Criança picada por escorpião é prioridade máxima.",
+    socorros:{ fazer:["Lave o local com água e sabão","Mantenha a pessoa calma e o membro elevado e imóvel","Anote o horário da picada; se possível, fotografe o animal à distância","Ligue 192 / Disque-Intoxicação"],
+               naoFazer:["NÃO faça torniquete/garrote","NÃO corte, NÃO chupe o veneno","NÃO aplique gelo, álcool, borra de café ou qualquer substância","NÃO dê bebida alcoólica"] } },
+  infarto:{ titulo:"Dor no peito / possível infarto", icone:ICN.infarto, rotas:["hemodinamica","ps_geral"],
+    confirmar:"Dor no peito pode ser infarto e exige hemodinâmica. Ligue 192 — não dirija por conta própria, pode haver parada cardíaca no caminho.",
+    socorros:{ fazer:["Pare qualquer esforço; sente ou deite a pessoa","Ligue 192 imediatamente","Afrouxe roupas apertadas"],
+               naoFazer:["NÃO dirija sozinho até o hospital se estiver passando mal","NÃO dê remédio por conta própria"] } },
+  avc:{ titulo:"Sinais de AVC (boca torta, fraqueza, fala)", icone:ICN.avc, rotas:["avc_tc_neuro","ps_geral"],
+    confirmar:"AVC tem janela curta e exige TC. Ligue 192 e informe a HORA EXATA em que os sinais começaram — disponibilidade de trombólise 24h NÃO é garantida; a regulação define o destino.",
+    socorros:{ fazer:["Anote a HORA em que os sinais começaram (é decisivo)","Ligue 192 imediatamente","Deite a pessoa com a cabeça levemente elevada"],
+               naoFazer:["NÃO dê comida, bebida nem remédio","NÃO espere os sintomas passarem"] } },
+  trauma:{ titulo:"Acidente / trauma com impacto", icone:ICN.trauma, rotas:["trauma_referencia","trauma_proxy","ps_geral"],
+    confirmar:"Trauma grave precisa de cirurgia, imagem e banco de sangue. Ligue 192 — em politrauma, a regulação define o destino.",
+    socorros:{ fazer:["Ligue 192","Estanque sangramentos com pano limpo e pressão","Mantenha a pessoa aquecida e calma"],
+               naoFazer:["NÃO mova a vítima se houver suspeita de lesão na coluna/pescoço","NÃO dê comida nem bebida (pode precisar de cirurgia)"] } },
+  obstetrica:{ titulo:"Emergência na gravidez / parto", icone:ICN.obstetrica, rotas:["obstetrica_alto_risco","obstetrica","ps_geral"],
+    confirmar:"Procure maternidade de referência. Se o parto estiver saindo, NÃO se desloque — ligue 192.",
+    socorros:{ fazer:["Ligue 192","Deite a gestante de lado (lado esquerdo)","Anote contrações/sangramento para informar"],
+               naoFazer:["NÃO tente acelerar o parto","NÃO dê medicação por conta própria"] } },
+  pediatrica:{ titulo:"Emergência com criança", icone:ICN.pediatrica, rotas:["neonatal_pediatrica","ps_geral"],
+    confirmar:"Criança piora rápido. Ligue 192. Picada de escorpião em criança = prioridade máxima de soro.",
+    socorros:{ fazer:["Ligue 192","Mantenha a criança calma e aquecida","Tenha em mãos peso/idade e o que aconteceu"],
+               naoFazer:["NÃO dê remédio sem orientação","NÃO ofereça comida/bebida se houver risco de cirurgia"] } },
+  queimadura:{ titulo:"Queimadura grave", icone:ICN.queimadura, rotas:["trauma_referencia","ps_geral"],
+    confirmar:"Queimadura no rosto, com fumaça inalada, elétrica/química ou extensa é referência de Centro de Queimados. Ligue 192.",
+    socorros:{ fazer:["Resfrie a área com água corrente em temperatura ambiente","Se a queimadura for muito extensa ou em criança/bebê, resfrie por pouco tempo e mantenha o resto do corpo aquecido (evite hipotermia)","Cubra com pano limpo e seco","Ligue 192"],
+               naoFazer:["NÃO passe pasta de dente, manteiga, pó de café ou pomada","NÃO estoure bolhas","NÃO remova roupa grudada na pele"] } },
+  nao_sei:{ titulo:"Não sei / outro problema", icone:ICN.nao_sei, rotas:["ps_geral"],
+    confirmar:"Na dúvida, ligue 192 ou procure o pronto-socorro mais próximo.",
+    socorros:{ fazer:["Ligue 192 e descreva o que está acontecendo","Procure o pronto-socorro/UPA mais próximo"],
+               naoFazer:["NÃO ignore sinais de gravidade"] } }
+};
 
-function aplicar(){
-  const vis=visiveis(),set=new Set(vis.map(v=>v.i));
-  itens.forEach(it=>{if(set.has(it.i))it.m.addTo(map);else map.removeLayer(it.m);});
-  let lista=vis.slice();
-  if(posUsuario)lista.sort((a,b)=>a.dist-b.dist);
-  renderLista(lista);
+// Telefone toxicológico nacional (MS) — funciona no PA; CIATOX-PA local a confirmar na curadoria.
+const TEL_TOX = { nome:"Disque-Intoxicação (gratuito)", num:"08007226001", exib:"0800 722 6001" };
+
+const RED_FLAGS = [
+  "Está desacordada, não responde, ou não está respirando",
+  "Engasgo: não consegue falar, tossir ou respirar",
+  "Dor forte no peito, falta de ar ou suor frio",
+  "Sinais de AVC: boca torta, fraqueza de um lado, fala enrolada (anote a hora!)",
+  "Convulsão agora, ou não acorda depois dela",
+  "Sangramento intenso que não para com pressão",
+  "Alergia grave: inchaço de lábios/língua/garganta, chiado ao respirar",
+  "Criança picada por escorpião/cobra, ou picada com vômitos, suor ou falta de ar",
+  "Queimadura no rosto, com fumaça inalada, elétrica/química ou muito extensa",
+  "Acidente grave, queda de altura, ou suspeita de lesão na coluna/pescoço",
+  "Parto saindo agora, ou convulsão/sangramento intenso na gravidez",
+  "Pele fria e pálida, confusão ou desmaio (sinais de choque)",
+  "Manchas roxas/avermelhadas na pele que não somem ao apertar (ainda mais em criança com febre)"
+];
+
+/* ---------------------------- helpers ---------------------------- */
+const app = document.getElementById("app");
+const state = { categoria:null, pos:null };
+
+function haversineKm(a,b){
+  const R=6371, rad=x=>x*Math.PI/180;
+  const dLat=rad(b.lat-a.lat), dLng=rad(b.lng-a.lng);
+  const s=Math.sin(dLat/2)**2 + Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(s));
+}
+function fmtKm(k){ return k<1 ? Math.round(k*1000)+" m" : k.toFixed(1).replace(".",",")+" km"; }
+function rotaURL(u){ return "https://www.google.com/maps/dir/?api=1&destination="+u.lat+","+u.lng+"&travelmode=driving"; }
+// Capacidade pode ser boolean simples (CNES) ou objeto {v,inc,obs} (curadoria de alta complexidade).
+function temCap(u, cap){ const c=u.cap&&u.cap[cap]; if(c===true) return true; return !!(c&&typeof c==="object"&&c.v===true); }
+function capMeta(u, cap){ const c=u.cap&&u.cap[cap]; return (c&&typeof c==="object")?c:null; }
+const ROTA_LABEL = { hemodinamica:"hemodinâmica", avc_tc_neuro:"AVC (TC + neuro)", trauma_referencia:"trauma de referência", obstetrica_alto_risco:"obstetrícia de alto risco", soro_antiveneno:"soro antiveneno" };
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function setScreen(html){ app.innerHTML=html; app.focus(); const h=app.querySelector("h1,h2"); if(h){ h.setAttribute("tabindex","-1"); h.focus(); } window.scrollTo(0,0); }
+
+/* ---------------------------- telas ---------------------------- */
+function screenHome(){
+  const cats = Object.entries(EMERGENCIAS).map(([id,e])=>
+    `<button class="cat${e.forcaC1?' cat-crit':''}" data-cat="${id}" aria-label="${esc(e.titulo)}">${e.icone}<span>${esc(e.titulo)}</span></button>`).join("");
+  setScreen(`
+    <h1>Qual é a emergência?</h1>
+    <p class="muted">Toque no tipo de situação. Em risco de vida, ligue <strong>192</strong> antes de sair.</p>
+    <div class="grid" role="list">${cats}</div>
+    <div class="panel small muted">
+      <strong>Aviso:</strong> ferramenta informativa, <strong>não substitui o SAMU 192</strong> nem
+      avaliação médica. Os dados podem estar desatualizados — confirme por telefone.
+    </div>`);
+  app.querySelectorAll(".cat").forEach(b=> b.addEventListener("click",()=>{
+    state.categoria=b.dataset.cat;
+    const e=EMERGENCIAS[state.categoria];
+    if(e&&e.forcaC1) screenCamada1(); else screenRedFlags();
+  }));
 }
 
-function renderLista(lista){
-  if(!lista.length){elLista.innerHTML='<div class="vazio">Nenhuma unidade encontrada.<br>Tente outro termo ou filtro.</div>';return;}
-  elLista.innerHTML='';
-  lista.forEach(it=>{const p=it.p;
-    const card=document.createElement('div');
-    card.className='card';card.dataset.i=it.i;card.style.borderLeftColor=CORES[p.tipo];
-    card.innerHTML='<span class="badge" style="background:'+CORES[p.tipo]+'">'+CURTO[p.tipo]+'</span>'+
-      '<h3>'+p.nome+'</h3>'+
-      (p.endereco?'<p class="end">📍 '+p.endereco+(p.bairro?' — '+p.bairro:'')+'</p>':(p.bairro?'<p class="end">📍 '+p.bairro+'</p>':''))+
-      (p.perfil?'<p class="perfil">🩺 '+p.perfil+'</p>':'')+
-      (it.dist!=null?'<p class="dist">📏 a '+it.dist.toFixed(1)+' km de você</p>':'')+
-      '<a class="btn-rota" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+it.latlng[0]+','+it.latlng[1]+'">Como chegar →</a>';
-    card.addEventListener('click',e=>{if(e.target.closest('.btn-rota'))return;selecionar(it.i,true);});
-    elLista.appendChild(card);
+function screenRedFlags(){
+  const items = RED_FLAGS.map(f=>`<li>${esc(f)}</li>`).join("");
+  setScreen(`
+    <button class="back" data-back>← Voltar</button>
+    <h2>Antes de tudo: há algum destes sinais?</h2>
+    <ul>${items}</ul>
+    <div class="row">
+      <button class="btn btn-192-screen btn-lg" style="background:var(--emerg);color:#fff" data-redflag="sim">SIM, tem um desses</button>
+    </div>
+    <div class="row">
+      <button class="btn btn-ghost btn-lg" data-redflag="nao">Não / nenhum desses</button>
+    </div>`);
+  app.querySelector("[data-back]").addEventListener("click", screenHome);
+  app.querySelectorAll("[data-redflag]").forEach(b=> b.addEventListener("click",()=>{
+    if(b.dataset.redflag==="sim") screenCamada1(); else screenLocate();
+  }));
+}
+
+function screenCamada1(){
+  const e = EMERGENCIAS[state.categoria] || EMERGENCIAS.nao_sei;
+  const toxBtn = e.tox
+    ? `<a class="btn" style="width:100%;margin-top:8px;background:#fff;color:var(--emerg)" href="tel:${TEL_TOX.num}">☎ ${esc(TEL_TOX.nome)}: ${esc(TEL_TOX.exib)}</a>`
+    : "";
+  setScreen(`
+    <div class="alert" role="alert">
+      <div>Situação de risco de vida</div>
+      <div class="big">LIGUE 192 AGORA</div>
+      <a class="btn btn-192" style="width:100%;background:#fff;color:var(--emerg)" href="tel:192">☎ Ligar 192 (SAMU)</a>
+      ${toxBtn}
+    </div>
+    <p class="muted">Não saia dirigindo por conta própria. A ambulância leva o suporte e a regulação médica define o hospital.</p>
+    ${firstAidBlock(e)}
+    <button class="back" data-back>← Voltar ao início</button>`);
+  app.querySelector("[data-back]").addEventListener("click", screenHome);
+}
+
+function firstAidBlock(e){
+  const f = e.socorros.fazer.map(x=>`<li>${esc(x)}</li>`).join("");
+  const d = e.socorros.naoFazer.map(x=>`<li>${esc(x)}</li>`).join("");
+  return `<div class="panel">
+    <h3>Primeiros socorros — ${esc(e.titulo)}</h3>
+    <div class="firstaid"><strong>Faça:</strong><ul>${f}</ul></div>
+    <div class="firstaid dont"><strong>NÃO faça:</strong><ul>${d}</ul></div>
+    <p class="small muted">Orientações de primeiros socorros revisadas clinicamente. Em dúvida, siga sempre o 192.</p>
+  </div>`;
+}
+
+function screenLocate(){
+  const opts = BAIRROS.map((b,i)=>`<option value="${i}">${esc(b.nome)}</option>`).join("");
+  setScreen(`
+    <button class="back" data-back>← Voltar</button>
+    <h2>Onde você está?</h2>
+    <p class="muted">Usamos sua localização só neste aparelho, para achar a unidade mais próxima. Nada é enviado pela internet.</p>
+    <div class="row"><button class="btn btn-primary btn-lg" data-geo>📍 Usar minha localização</button></div>
+    <div class="panel">
+      <label for="bairro">Ou escolha seu bairro / zona</label>
+      <select id="bairro" class="field">${opts}</select>
+      <div class="row"><button class="btn btn-ghost btn-lg" data-bairro>Continuar com este bairro</button></div>
+    </div>
+    <p id="geomsg" class="small muted" role="status"></p>`);
+  app.querySelector("[data-back]").addEventListener("click", screenRedFlags);
+  app.querySelector("[data-bairro]").addEventListener("click",()=>{
+    const i=+app.querySelector("#bairro").value; const b=BAIRROS[i];
+    state.pos={lat:b.lat,lng:b.lng,fonte:"bairro: "+b.nome}; screenResults();
   });
+  app.querySelector("[data-geo]").addEventListener("click", pedirGeo);
 }
 
-function selecionar(i,fly){
-  const it=itens[i];
-  if(fly){map.flyTo(it.latlng,15,{duration:.6});}
-  it.m.addTo(map).openPopup();
-  document.querySelectorAll('.card').forEach(c=>c.classList.toggle('sel',c.dataset.i==i));
-  const card=document.querySelector('.card[data-i="'+i+'"]');
-  if(card)card.scrollIntoView({behavior:'smooth',block:'nearest'});
+function pedirGeo(){
+  const msg=app.querySelector("#geomsg");
+  if(!navigator.geolocation){ msg.textContent="Este aparelho não fornece localização — escolha o bairro acima."; return; }
+  msg.textContent="Obtendo sua localização…";
+  navigator.geolocation.getCurrentPosition(
+    p=>{ state.pos={lat:p.coords.latitude,lng:p.coords.longitude,fonte:"GPS"}; screenResults(); },
+    ()=>{ msg.textContent="Não foi possível obter sua localização. Escolha seu bairro/zona acima."; },
+    { enableHighAccuracy:true, timeout:9000, maximumAge:60000 }
+  );
 }
 
-function pertoDeMim(){
-  const btn=document.getElementById('btn-perto');
-  if(!navigator.geolocation){alert('Geolocalização não suportada neste navegador.');return;}
-  btn.textContent='⏳ Localizando...';
-  navigator.geolocation.getCurrentPosition(pos=>{
-    posUsuario=[pos.coords.latitude,pos.coords.longitude];
-    itens.forEach(it=>it.dist=haversine(posUsuario,it.latlng));
-    L.marker(posUsuario).addTo(map).bindPopup('📍 Você está aqui').openPopup();
-    map.setView(posUsuario,13);
-    btn.textContent='📍 Perto de mim';
-    aplicar();
-  },()=>{btn.textContent='📍 Perto de mim';
-    alert('Não foi possível obter sua localização. Verifique a permissão de localização do navegador (e note que isso costuma exigir o site publicado em HTTPS).');
-  },{enableHighAccuracy:true,timeout:10000});
+function screenResults(){
+  const e = EMERGENCIAS[state.categoria] || EMERGENCIAS.nao_sei;
+  const rotas = e.rotas || ["ps_geral"];
+  const geo = u=> u.lat!=null && u.lng!=null;
+
+  // Cascata: percorre as rotas (referência -> base -> ps_geral), acumulando até 3
+  // unidades sem repetir. "ref" = veio da 1a rota e não é ps_geral (capacidade especializada).
+  const vistos = new Set();
+  const resultados = [];
+  let achouRef = false;
+  for(let r=0; r<rotas.length && resultados.length<3; r++){
+    const cap = rotas[r];
+    const ehRef = (r===0 && cap!=="ps_geral");
+    UNIDADES
+      .filter(u=> geo(u) && temCap(u,cap) && !vistos.has(u))
+      .map(u=> ({u, dist:haversineKm(state.pos,u)}))
+      .sort((a,b)=> a.dist-b.dist)
+      .forEach(x=>{ if(resultados.length<3){ resultados.push({u:x.u, dist:x.dist, cap, ref:ehRef}); vistos.add(x.u); if(ehRef) achouRef=true; } });
+  }
+
+  const temRota = rotas[0] && rotas[0]!=="ps_geral";
+  const semRef = temRota && !achouRef;
+  const cards = resultados.map((x,i)=> hospCard(x.u, x.dist, i===0, x)).join("");
+  const tox = e.tox ? `<a class="btn btn-192" style="width:100%;margin-top:8px" href="tel:${TEL_TOX.num}">☎ ${esc(TEL_TOX.nome)}: ${esc(TEL_TOX.exib)}</a>` : "";
+
+  setScreen(`
+    <button class="back" data-back>← Voltar</button>
+    <h2>${esc(e.titulo)}</h2>
+    <a class="btn btn-192" style="width:100%" href="tel:192">☎ LIGAR 192 (SAMU) — faça isso primeiro</a>
+    ${tox}
+    <div class="panel" style="border-color:var(--warn)">
+      <strong>⚠ Confirme antes de ir:</strong> ${esc(e.confirmar)}
+    </div>
+    ${semRef?`<p class="muted small">Nenhuma <strong>unidade de referência</strong> com localização foi encontrada por perto — mostrando o pronto-socorro mais próximo como retaguarda. A regulação do 192 define o destino.</p>`:""}
+    <p class="muted small">A partir de ${esc(state.pos.fonte)} · distância <strong>em linha reta</strong>.</p>
+    ${cards || "<p>Nenhuma unidade encontrada com localização para esta busca. Ligue 192.</p>"}
+    ${firstAidBlock(e)}`);
+  app.querySelector("[data-back]").addEventListener("click", screenLocate);
 }
 
-document.getElementById('busca').addEventListener('input',e=>{termo=e.target.value.trim();aplicar();});
-document.querySelectorAll('#filtros button[data-tipo]').forEach(b=>b.addEventListener('click',()=>{
-  document.querySelectorAll('#filtros button[data-tipo]').forEach(x=>x.classList.remove('ativo'));
-  b.classList.add('ativo');filtroTipo=b.dataset.tipo;aplicar();}));
-document.getElementById('btn-perto').addEventListener('click',pertoDeMim);
-aplicar();
+function u_aberto(u){ return u.h24===true; } // demo: referências 24h; horário real virá do dataset
+
+function hospCard(u,dist,best,info){
+  info = info || {};
+  const aberto = u_aberto(u);
+  const tel = u.tel ? `<a class="btn btn-primary" href="tel:${esc(u.tel)}">☎ Ligar hospital</a>`
+                    : `<button class="btn btn-ghost" disabled title="Telefone não cadastrado no CNES">☎ Sem telefone</button>`;
+  const horario = aberto
+    ? `<span class="tag open">✓ Aberto 24h (CNES)</span>`
+    : `<span class="tag closed">• Confirme o horário</span>`;
+  const rmb = u.rmb ? `<span class="tag closed">Região Metropolitana</span>` : "";
+  // Selo de referência + aviso de incerteza da capacidade curada
+  let refTag = "", incAviso = "";
+  if(info.ref){
+    refTag = `<span class="tag open">✓ Referência: ${esc(ROTA_LABEL[info.cap] || "especializada")}</span>`;
+    const m = capMeta(u, info.cap);
+    if(m && (m.inc==="media" || m.inc==="alta")){
+      incAviso = `<p class="small" style="color:var(--warn);margin:6px 0">⚠ <strong>Capacidade não confirmada em tempo real${m.inc==="alta"?" — incerteza alta":""}.</strong> ${esc(m.obs||"Confirme pelo 192 antes de ir.")}</p>`;
+    }
+  }
+  return `<div class="hosp ${best?'best':''}">
+    ${best?'<span class="tag dist">Mais próximo</span> ':''}${refTag}
+    <h3>${esc(u.nome)}</h3>
+    <p class="muted">${esc(u.bairro)}${u.tipo?` · ${esc(u.tipo)}`:''}</p>
+    <div>
+      ${horario}
+      <span class="tag dist">↦ ${fmtKm(dist)} em linha reta</span>
+      ${rmb}
+    </div>
+    ${incAviso}
+    <div class="row">
+      <a class="btn btn-primary" href="${rotaURL(u)}" target="_blank" rel="noopener">🗺 Traçar rota</a>
+      ${tel}
+    </div>
+    <p class="small muted">Dado do CNES — confirme por telefone / 192 antes de ir.</p>
+  </div>`;
+}
+
+/* ---------------------------- footer ---------------------------- */
+document.body.insertAdjacentHTML("beforeend",
+  `<footer class="wrap">
+     <p><strong>Emergência Belém — protótipo acadêmico.</strong> Não substitui o SAMU 192 nem avaliação médica.
+     Em emergência, ligue 192. Dados: ${esc(DATA_STAMP)}.</p>
+     <p>Sua localização e a emergência escolhida ficam só neste aparelho.</p>
+   </footer>`);
+
+screenHome();
 </script>
 </body>
 </html>
